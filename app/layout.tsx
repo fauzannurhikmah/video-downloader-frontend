@@ -9,6 +9,10 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
+  verification: {
+    google: 'googleb5763cc219d9242e',
+  },
+
   icons: {
     icon: '/icon-v2.png',
     shortcut: '/icon-v2.png',
