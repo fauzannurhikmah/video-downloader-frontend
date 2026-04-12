@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   verification: {
-    google: 'googleb5763cc219d9242e',
+    google: '8bslfHNUDHf_ZnhSTit-glfbYOHfdUzdQ59FCUDtQq0',
   },
 
   icons: {
