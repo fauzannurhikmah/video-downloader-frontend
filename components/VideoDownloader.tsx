@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, AlertCircle, CheckCircle, Loader2, Copy, ExternalLink } from 'lucide-react'
+import { Download, AlertCircle, CheckCircle, Loader2, Copy, ExternalLink, Timer, Dot } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
@@ -9,6 +9,8 @@ interface DownloadResponse {
     success: boolean
     data?: {
         title: string
+        type?: 'video' | 'audio'
+        filesize: string
         thumbnail: string
         duration: string
         download_url: string
@@ -22,7 +24,10 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:800
 export default function VideoDownloader() {
     const [url, setUrl] = useState('')
     const [loading, setLoading] = useState(false)
-    const [downloadData, setDownloadData] = useState<DownloadResponse['data'] | null>(null)
+
+    const [videoData, setVideoData] = useState<DownloadResponse['data'] | null>(null)
+    const [audioData, setAudioData] = useState<DownloadResponse['data'] | null>(null)
+
     const [downloadType, setDownloadType] = useState<'video' | 'audio'>('video')
 
     const handleDownload = async (e: React.FormEvent) => {
@@ -42,13 +47,21 @@ export default function VideoDownloader() {
                     type: downloadType,
                 },
                 {
-                    timeout: 30000,
+                    timeout: 300000,
                 }
             )
 
             if (response.data.success && response.data.data) {
-                setDownloadData(response.data.data)
-                toast.success('Video ready to download!')
+                const data = response.data.data
+                console.log(data);
+
+                if (data.type === 'video') {
+                    setVideoData(data)
+                } else if (data.type === 'audio') {
+                    setAudioData(data)
+                }
+
+                toast.success(`${data.type} ready to download!`)
             } else {
                 toast.error(response.data.error || 'Failed to process video')
             }
@@ -68,6 +81,8 @@ export default function VideoDownloader() {
         navigator.clipboard.writeText(text)
         toast.success('Copied to clipboard!')
     }
+
+    const currentData = downloadType === 'video' ? videoData : audioData
 
     return (
         <div className="w-full space-y-6">
@@ -110,8 +125,8 @@ export default function VideoDownloader() {
                                     <label
                                         key={type}
                                         className={`flex-1 px-4 py-3 rounded-lg cursor-pointer font-medium transition-all text-center ${downloadType === type
-                                                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25'
-                                                : 'text-gray-400 hover:text-white'
+                                            ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25'
+                                            : 'text-gray-400 hover:text-white'
                                             }`}
                                     >
                                         <input
@@ -152,16 +167,16 @@ export default function VideoDownloader() {
             </div>
 
             {/* Download Result Card */}
-            {downloadData && (
+            {currentData && (
                 <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-xl hover:border-white/40 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
                     <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10" />
 
                     <div className="relative p-8 space-y-6">
                         <div className="flex items-start gap-6">
-                            {downloadData.thumbnail && (
+                            {currentData.thumbnail && (
                                 <div className="relative flex-shrink-0">
                                     <img
-                                        src={downloadData.thumbnail}
+                                        src={currentData.thumbnail}
                                         alt="thumbnail"
                                         className="w-32 h-32 rounded-2xl object-cover ring-2 ring-white/20"
                                     />
@@ -172,30 +187,37 @@ export default function VideoDownloader() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-start gap-3 mb-4">
                                     <div className="flex-shrink-0 mt-1">
-                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-emerald-400">
-                                            <CheckCircle className="w-5 h-5 text-white" />
+                                        <div className="flex items-center justify-center size-7 rounded-full bg-gradient-to-r from-green-400 to-emerald-400">
+                                            <CheckCircle className="size-4 text-white" />
                                         </div>
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-lg text-white truncate">{downloadData.title}</h3>
-                                        {downloadData.duration && (
-                                            <p className="text-sm text-gray-400 mt-1">Duration: {downloadData.duration}</p>
-                                        )}
+                                        <h3 className="font-bold text-lg text-white truncate">{currentData.title}</h3>
+
+                                        <div className="flex items-baseline gap-2 text-gray-400">
+                                            {currentData.duration && (
+                                                <p className="text-sm mt-1"> Duration: {currentData.duration} </p>
+                                            )}
+                                            •
+                                            {currentData.filesize && (
+                                                <p className="text-sm"> Size: {currentData.filesize} </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <a
-                                        href={downloadData.download_url}
+                                        href={BACKEND_URL + currentData.download_url}
                                         download
                                         className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
                                     >
                                         <Download className="w-4 h-4" />
                                         Download {downloadType === 'video' ? 'Video' : 'Audio'}
                                     </a>
-                                    {downloadData.audio_url && downloadType === 'video' && (
+                                    {currentData.audio_url && downloadType === 'video' && (
                                         <a
-                                            href={downloadData.audio_url}
+                                            href={currentData.audio_url}
                                             download
                                             className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25"
                                         >
@@ -207,7 +229,7 @@ export default function VideoDownloader() {
 
                                 <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
                                     <button
-                                        onClick={() => copyToClipboard(downloadData.download_url)}
+                                        onClick={() => copyToClipboard(currentData.download_url)}
                                         className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
                                     >
                                         <Copy className="w-4 h-4" />
