@@ -2,10 +2,84 @@ import type { Metadata } from 'next'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  'http://localhost:3000'
+
 export const metadata: Metadata = {
-  title: 'Video Downloader - Download from Any Platform',
-  description: 'Download videos from YouTube, TikTok, Instagram, Facebook, Twitter and more',
-  keywords: 'video downloader, youtube, tiktok, instagram, facebook, twitter',
+  metadataBase: new URL(siteUrl),
+
+  icons: {
+    icon: '/icon-v2.png',
+    shortcut: '/icon-v2.png',
+    apple: '/icon-v2.png',
+  },
+
+  title: {
+    default: 'Free Video Downloader Online - YouTube, TikTok, Instagram, Facebook',
+    template: '%s | Free Video Downloader',
+  },
+
+  description:
+    'Download videos online from YouTube, TikTok, Instagram, Facebook, and Twitter in HD. Fast, free, and no watermark. Supports MP4 and MP3 formats.',
+
+  keywords: [
+    'video downloader',
+    'youtube downloader',
+    'tiktok downloader no watermark',
+    'instagram video downloader',
+    'facebook video downloader',
+    'twitter video downloader',
+    'download mp4 online',
+    'download mp3 from video',
+    'free video downloader',
+  ],
+
+  authors: [{ name: 'Video Downloader' }],
+  creator: 'Video Downloader',
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+
+  openGraph: {
+    type: 'website',
+    url: siteUrl,
+    title: 'Free Video Downloader - Download from Any Platform',
+    description:
+      'Download videos from YouTube, TikTok, Instagram, Facebook, and Twitter in HD quality. No watermark, fast and free.',
+    siteName: 'Video Downloader',
+    images: [
+      {
+        url: '/icon-v2.png',
+        width: 1200,
+        height: 630,
+        alt: 'Video Downloader',
+      },
+    ],
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free Video Downloader - HD Video & MP3',
+    description:
+      'Download videos from YouTube, TikTok, Instagram, Facebook and more. Fast & free.',
+    images: ['/icon-v2.png'],
+  },
+
+  alternates: {
+    canonical: siteUrl,
+  },
+
+  category: 'technology',
 }
 
 export default function RootLayout({
