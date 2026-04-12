@@ -46,9 +46,6 @@ export default function VideoDownloader() {
                 {
                     url: url.trim(),
                     type: downloadType,
-                },
-                {
-                    timeout: 300000,
                 }
             )
 
