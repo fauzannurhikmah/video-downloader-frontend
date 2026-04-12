@@ -37,7 +37,8 @@ export default function VideoDownloader() {
             toast.error('Please enter a valid URL')
             return
         }
-
+        setVideoData(null)
+        setAudioData(null)
         setLoading(true)
         try {
             const response = await axios.post<DownloadResponse>(
