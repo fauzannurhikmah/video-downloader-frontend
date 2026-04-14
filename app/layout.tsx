@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
+import config from '@/config'
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ||
+  config.SITE_URL ||
   'http://localhost:3000'
 
 export const metadata: Metadata = {

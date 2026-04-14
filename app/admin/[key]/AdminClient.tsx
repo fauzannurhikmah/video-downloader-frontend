@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, AlertCircle, CheckCircle, Loader2, Copy, ExternalLink, Timer, Dot, MonitorPlay, Music, Globe, MessageCircle, Bird, Play } from 'lucide-react'
+import { Upload, Loader2, MonitorPlay, Music, Globe, MessageCircle, Bird, Play, CheckCircle } from 'lucide-react'
 import toast from "react-hot-toast";
+import axios from "axios";
+import config from "@/config";
 
 type Platform =
     | "youtube"
@@ -16,6 +18,7 @@ export default function AdminPage() {
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [platform, setPlatform] = useState<Platform>("youtube");
+    const [dragging, setDragging] = useState(false);
 
     const handleUpload = async (): Promise<void> => {
         if (!file) {
@@ -30,24 +33,22 @@ export default function AdminPage() {
         formData.append("platform", platform);
 
         try {
-            const res = await fetch("/api/admin/upload-cookies", {
+            const res = await fetch(`/api/upload-cookies`, {
                 method: "POST",
-                headers: {
-                    "x-api-key": process.env.NEXT_PUBLIC_API_KEY as string,
-                },
                 body: formData,
             });
 
-            const data: { detail?: string } = await res.json();
+            const data = await res.json();
 
             if (res.ok) {
-                toast.success(`${platform} cookies updated 🚀`);
+                toast.success(`${platform} cookies updated`);
                 setFile(null);
             } else {
                 toast.error(data.detail || "Upload failed");
             }
-        } catch (err) {
-            toast.error("Network error");
+
+        } catch (error) {
+            toast.error("Network Error");
         } finally {
             setLoading(false);
         }
@@ -64,6 +65,32 @@ export default function AdminPage() {
         }
 
         setFile(selected);
+    };
+
+    // DRAG & DROP
+    const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setDragging(false);
+
+        const droppedFile = e.dataTransfer.files?.[0];
+
+        if (!droppedFile) return;
+
+        if (!droppedFile.name.endsWith(".txt")) {
+            toast.error("Only .txt allowed");
+            return;
+        }
+
+        setFile(droppedFile);
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setDragging(false);
     };
 
     const platforms = [
@@ -84,7 +111,6 @@ export default function AdminPage() {
                 <div className="absolute top-40 -right-40 w-80 h-80 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
                 <div className="absolute -bottom-40 left-20 w-80 h-80 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
             </div>
-
 
             <div className="w-full max-w-xl space-y-6">
 
@@ -142,7 +168,16 @@ export default function AdminPage() {
                         </div>
 
                         {/* UPLOAD BOX */}
-                        <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-white/20 rounded-2xl cursor-pointer hover:border-blue-500/50 transition-all bg-white/5">
+                        <label
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            className={`flex flex-col items-center justify-center w-full h-44 border-2 border-dashed rounded-2xl cursor-pointer transition-all bg-white/5
+                            ${dragging
+                                    ? "border-blue-500 bg-blue-500/10"
+                                    : "border-white/20 hover:border-blue-500/50"
+                                }`}
+                        >
 
                             <input
                                 type="file"
@@ -151,11 +186,34 @@ export default function AdminPage() {
                                 onChange={handleFileChange}
                             />
 
-                            <Upload className="w-6 h-6 text-gray-400 mb-2" />
+                            <div className="flex flex-col items-center justify-center text-center px-4">
+                                {file ? (
+                                    <>
+                                        {/* FILE STATE */}
+                                        <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 px-4 py-2 rounded-lg">
+                                            <CheckCircle className="w-5 h-5 text-green-400" />
+                                            <span className="text-sm text-green-300 truncate max-w-[200px]">
+                                                {file.name}
+                                            </span>
+                                        </div>
 
-                            <span className="text-gray-400 text-sm">
-                                {file ? file.name : "Upload cookies.txt"}
-                            </span>
+                                        <span className="text-xs text-gray-400 mt-2">
+                                            Click or drop to replace
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* EMPTY STATE */}
+                                        <Upload className="w-6 h-6 text-gray-400 mb-2" />
+
+                                        <span className="text-gray-400 text-sm">
+                                            {dragging
+                                                ? "Drop file here..."
+                                                : "Upload cookies.txt"}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
                         </label>
 
                         {/* BUTTON */}

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Download, AlertCircle, CheckCircle, Loader2, Copy, ExternalLink, Timer, Dot } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import config from '@/config'
 
 interface DownloadResponse {
     success: boolean
@@ -18,8 +19,6 @@ interface DownloadResponse {
     }
     error?: string
 }
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL as string
 
 export default function VideoDownloader() {
     const [url, setUrl] = useState('')
@@ -42,7 +41,7 @@ export default function VideoDownloader() {
         setLoading(true)
         try {
             const response = await axios.post<DownloadResponse>(
-                `${BACKEND_URL}/api/download`,
+                `${config.BACKEND_URL}/api/download`,
                 {
                     url: url.trim(),
                     type: downloadType,
@@ -206,7 +205,7 @@ export default function VideoDownloader() {
 
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <a
-                                        href={BACKEND_URL + currentData.download_url}
+                                        href={config.BACKEND_URL + currentData.download_url}
                                         download
                                         className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
                                     >
