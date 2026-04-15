@@ -5,7 +5,7 @@ import config from '@/config'
 
 const siteUrl =
   config.SITE_URL ||
-  'http://localhost:3000'
+  'https://video-downloader.zhiendfield.com'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
