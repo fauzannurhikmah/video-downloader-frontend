@@ -15,9 +15,14 @@ export const metadata: Metadata = {
   },
 
   icons: {
-    icon: '/icon-v2.png',
-    shortcut: '/icon-v2.png',
-    apple: '/icon-v2.png',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon-v2.png' }
+    ],
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 
   title: {
@@ -67,15 +72,15 @@ export const metadata: Metadata = {
     images: [
       {
         url: '/icon-v2.png',
-        width: 1200,
-        height: 630,
+        width: 600,
+        height: 600,
         alt: 'Video Downloader',
       },
     ],
   },
 
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'Free Video Downloader - HD Video & MP3',
     description:
       'Download videos from YouTube, TikTok, Instagram, Facebook and more. Fast & free.',

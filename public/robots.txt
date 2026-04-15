@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /icon-v2.png
+Allow: /favicon.ico
 
-Sitemap: https://video-downloader-vert-five.vercel.app/sitemap.xml
+Sitemap: https://video-downloader.zhiendfield.com/sitemap.xml
