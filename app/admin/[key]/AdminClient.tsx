@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, Loader2, MonitorPlay, Music, Globe, MessageCircle, Bird, Play, CheckCircle } from 'lucide-react'
+import { useState, useRef, useEffect } from "react";
+import { Upload, Loader2, MonitorPlay, Music, Globe, MessageCircle, Bird, Play, CheckCircle, ChevronDown, X } from 'lucide-react'
 import toast from "react-hot-toast";
-import axios from "axios";
-import config from "@/config";
 
 type Platform =
     | "youtube"
@@ -20,78 +18,9 @@ export default function AdminPage() {
     const [platform, setPlatform] = useState<Platform>("youtube");
     const [dragging, setDragging] = useState(false);
 
-    const handleUpload = async (): Promise<void> => {
-        if (!file) {
-            toast.error("Select cookies file first");
-            return;
-        }
-
-        setLoading(true);
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("platform", platform);
-
-        try {
-            const res = await fetch(`/api/upload-cookies`, {
-                method: "POST",
-                body: formData,
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                toast.success(`${platform} cookies updated`);
-                setFile(null);
-            } else {
-                toast.error(data.detail || "Upload failed");
-            }
-
-        } catch (error) {
-            toast.error("Network Error");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleFileChange = (
-        e: React.ChangeEvent<HTMLInputElement>
-    ): void => {
-        const selected = e.target.files?.[0] || null;
-
-        if (selected && !selected.name.endsWith(".txt")) {
-            toast.error("Only .txt allowed");
-            return;
-        }
-
-        setFile(selected);
-    };
-
-    // DRAG & DROP
-    const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
-        e.preventDefault();
-        setDragging(false);
-
-        const droppedFile = e.dataTransfer.files?.[0];
-
-        if (!droppedFile) return;
-
-        if (!droppedFile.name.endsWith(".txt")) {
-            toast.error("Only .txt allowed");
-            return;
-        }
-
-        setFile(droppedFile);
-    };
-
-    const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
-        e.preventDefault();
-        setDragging(true);
-    };
-
-    const handleDragLeave = () => {
-        setDragging(false);
-    };
+    // State buat custom dropdown
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const platforms = [
         { key: "youtube", icon: MonitorPlay, label: "YouTube" },
@@ -102,139 +31,197 @@ export default function AdminPage() {
         { key: "twitch", icon: Play, label: "Twitch" },
     ];
 
-    return (
-        <div className="w-full flex items-center justify-center p-6 min-h-screen bg-black">
+    // Cari platform yang lagi kepilih buat ditampilin di button
+    const selectedPlatform = platforms.find(p => p.key === platform) || platforms[0];
+    const SelectedIcon = selectedPlatform.icon;
 
-            {/* Animated Background */}
+    // Handle klik di luar buat nutup dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleUpload = async (): Promise<void> => {
+        if (!file) {
+            toast.error("Select cookies file first");
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("platform", platform);
+
+        try {
+            const res = await fetch(`/api/upload-cookies`, { method: "POST", body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(`${platform} cookies updated`);
+                setFile(null);
+            } else {
+                toast.error(data.detail || "Upload failed");
+            }
+        } catch (error) {
+            toast.error("Network Error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+        const selected = e.target.files?.[0] || null;
+        if (selected && !selected.name.endsWith(".txt")) {
+            toast.error("Only .txt allowed");
+            return;
+        }
+        setFile(selected);
+    };
+
+    return (
+        <div className="w-full flex items-center justify-center p-6 min-h-screen bg-black text-white">
+            {/* Background Decor */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 -left-40 w-80 h-80 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
                 <div className="absolute top-40 -right-40 w-80 h-80 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-                <div className="absolute -bottom-40 left-20 w-80 h-80 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
             </div>
 
-            <div className="w-full max-w-xl space-y-6">
-
-                {/* CARD */}
-                <div className="group relative p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-xl hover:border-white/40 transition-all duration-300">
-
-                    {/* Glow */}
-                    <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
+            <div className="w-full max-w-xl space-y-6 relative">
+                <div className="group relative p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl transition-all duration-300">
                     <div className="relative space-y-6">
-
-                        {/* TITLE */}
                         <div>
                             <h2 className="text-3xl font-bold mb-1">Upload Cookies</h2>
-                            <p className="text-gray-400">
-                                Manage platform session cookies
-                            </p>
+                            <p className="text-gray-400">Manage platform session cookies</p>
                         </div>
 
-                        {/* PLATFORM SELECTOR */}
-                        <div className="space-y-2">
-                            <label className="text-sm text-gray-300">Platform</label>
+                        {/* CUSTOM PLATFORM SELECTOR */}
+                        <div className="space-y-2" ref={dropdownRef}>
+                            <label className="text-sm text-gray-300">Target Platform</label>
+                            <div className="relative">
+                                {/* Trigger Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsOpen(!isOpen)}
+                                    className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 hover:border-blue-500/50 transition-all text-left"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <SelectedIcon className="w-5 h-5 text-blue-400" />
+                                        <span className="font-medium">{selectedPlatform.label}</span>
+                                    </div>
+                                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                </button>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                {platforms.map((p) => {
-                                    const Icon = p.icon;
-
-                                    return (
-                                        <label
-                                            key={p.key}
-                                            className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all border ${platform === p.key
-                                                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-lg shadow-blue-500/25"
-                                                : "bg-white/5 text-gray-400 border-white/10 hover:text-white"
-                                                }`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="platform"
-                                                value={p.key}
-                                                checked={platform === p.key}
-                                                onChange={() =>
-                                                    setPlatform(p.key as Platform)
-                                                }
-                                                className="hidden"
-                                            />
-
-                                            <Icon className="w-4 h-4" />
-                                            <span className="text-sm font-semibold">
-                                                {p.label}
-                                            </span>
-                                        </label>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* UPLOAD BOX */}
-                        <label
-                            onDrop={handleDrop}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            className={`flex flex-col items-center justify-center w-full h-44 border-2 border-dashed rounded-2xl cursor-pointer transition-all bg-white/5
-                            ${dragging
-                                    ? "border-blue-500 bg-blue-500/10"
-                                    : "border-white/20 hover:border-blue-500/50"
-                                }`}
-                        >
-
-                            <input
-                                type="file"
-                                accept=".txt"
-                                className="hidden"
-                                onChange={handleFileChange}
-                            />
-
-                            <div className="flex flex-col items-center justify-center text-center px-4">
-                                {file ? (
-                                    <>
-                                        {/* FILE STATE */}
-                                        <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 px-4 py-2 rounded-lg">
-                                            <CheckCircle className="w-5 h-5 text-green-400" />
-                                            <span className="text-sm text-green-300 truncate max-w-[200px]">
-                                                {file.name}
-                                            </span>
+                                {/* Dropdown Menu */}
+                                {isOpen && (
+                                    <div className="absolute top-full left-0 w-full mt-2 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="max-h-60 overflow-y-auto py-1">
+                                            {platforms.map((p) => {
+                                                const Icon = p.icon;
+                                                return (
+                                                    <button
+                                                        key={p.key}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setPlatform(p.key as Platform);
+                                                            setIsOpen(false);
+                                                        }}
+                                                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors ${platform === p.key ? 'bg-blue-500/10 text-blue-400' : 'text-gray-300'}`}
+                                                    >
+                                                        <Icon className="w-5 h-5" />
+                                                        <span className="font-medium">{p.label}</span>
+                                                        {platform === p.key && <CheckCircle className="w-4 h-4 ml-auto" />}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-
-                                        <span className="text-xs text-gray-400 mt-2">
-                                            Click or drop to replace
-                                        </span>
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* EMPTY STATE */}
-                                        <Upload className="w-6 h-6 text-gray-400 mb-2" />
-
-                                        <span className="text-gray-400 text-sm">
-                                            {dragging
-                                                ? "Drop file here..."
-                                                : "Upload cookies.txt"}
-                                        </span>
-                                    </>
+                                    </div>
                                 )}
                             </div>
-                        </label>
+                        </div>
 
-                        {/* BUTTON */}
+                        {/* UPLOAD BOX - REVISED UI/UX */}
+                        <div className="space-y-2">
+                            <label className="text-sm text-gray-300">Cookies File (.txt)</label>
+
+                            <div
+                                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                                onDragLeave={() => setDragging(false)}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    setDragging(false);
+                                    const f = e.dataTransfer.files?.[0];
+                                    if (f?.name.endsWith(".txt")) setFile(f);
+                                    else toast.error("Only .txt allowed");
+                                }}
+                                className={`relative group flex flex-col items-center justify-center w-full min-h-[180px] border-2 border-dashed rounded-2xl transition-all duration-300 
+            ${file
+                                        ? "border-green-500/50 bg-green-500/5 shadow-[insent_0_2px_20px_rgba(34,197,94,0.1)]"
+                                        : dragging
+                                            ? "border-blue-500 bg-blue-500/10 scale-[1.01] shadow-lg shadow-blue-500/20"
+                                            : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20"
+                                    }`}
+                            >
+                                <input
+                                    type="file"
+                                    accept=".txt"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    onChange={handleFileChange}
+                                />
+
+                                {!file ? (
+                                    <div className="flex flex-col items-center p-6 text-center">
+                                        <div className="p-4 rounded-full bg-white/5 mb-4 group-hover:scale-110 group-hover:bg-blue-500/10 transition-all duration-300">
+                                            <Upload className={`w-8 h-8 ${dragging ? "text-blue-400 animate-bounce" : "text-gray-400"}`} />
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-200">
+                                            {dragging ? "Drop it here!" : "Click or drag cookies file"}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">Maximum size: 2MB (.txt only)</p>
+                                    </div>
+                                ) : (
+                                    <div className="w-full p-4 flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+                                        {/* File Icon Card */}
+                                        <div className="flex-shrink-0 w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center border border-green-500/30">
+                                            <CheckCircle className="w-6 h-6 text-green-400" />
+                                        </div>
+
+                                        {/* File Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-green-400 truncate leading-none mb-1">
+                                                {file.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wider">
+                                                {(file.size / 1024).toFixed(1)} KB • Ready to upload
+                                            </p>
+                                        </div>
+
+                                        {/* Remove Button */}
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setFile(null);
+                                            }}
+                                            className="z-20 p-2 hover:bg-red-500/10 hover:text-red-400 text-gray-500 rounded-lg transition-colors"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* SUBMIT BUTTON */}
                         <button
                             onClick={handleUpload}
                             disabled={loading}
-                            className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
+                            className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 disabled:grayscale disabled:cursor-not-allowed font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20"
                         >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Uploading...
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="w-5 h-5" />
-                                    Upload Cookies
-                                </>
-                            )}
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Upload className="w-5 h-5" /> Upload Cookies</>}
                         </button>
-
                     </div>
                 </div>
             </div>
