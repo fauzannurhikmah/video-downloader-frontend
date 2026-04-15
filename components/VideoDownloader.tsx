@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, AlertCircle, CheckCircle, Loader2, Copy, ExternalLink, Timer, Dot } from 'lucide-react'
+import { Download, AlertCircle, CheckCircle, Loader2, Copy, ExternalLink, Timer, Dot, Sparkles, AlignLeft, Hash } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import config from '@/config'
@@ -16,6 +16,8 @@ interface DownloadResponse {
         duration: string
         download_url: string
         audio_url?: string
+        caption?: string;
+        tags?: string[];
     }
     error?: string
 }
@@ -163,74 +165,147 @@ export default function VideoDownloader() {
                 </div>
             </div>
 
-            {/* Download Result Card */}
             {currentData && (
-                <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-xl hover:border-white/40 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10" />
+                <div className="w-full max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="rounded-[32px] bg-[#0f0f0f] border border-white/5 overflow-hidden shadow-2xl">
 
-                    <div className="relative p-8 space-y-6">
-                        <div className="flex items-start gap-6">
-                            {currentData.thumbnail && (
-                                <div className="relative flex-shrink-0">
+                        <div className="p-6 md:p-8 space-y-8">
+
+                            {/* Header: Status & Title */}
+                            <div className="space-y-3 text-center">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+                                    <div className="size-1.5 rounded-full bg-green-500 animate-pulse" />
+                                    <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Ready to Download</span>
+                                </div>
+                                <h3 className="text-xl font-bold text-white leading-tight px-4 line-clamp-2">
+                                    {currentData.title}
+                                </h3>
+                            </div>
+
+                            {/* Main Content: Split Layout (Kiri Thumbnail, Kanan Info & Action) */}
+                            <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start bg-white/[0.02] p-5 rounded-3xl border border-white/[0.03]">
+
+                                {/* Kiri: Thumbnail Kecil */}
+                                <div className="relative group w-32 h-32 md:w-40 md:h-40 flex-shrink-0">
                                     <img
                                         src={currentData.thumbnail}
                                         alt="thumbnail"
-                                        className="w-32 h-32 rounded-2xl object-cover ring-2 ring-white/20"
+                                        className="w-full h-full object-cover rounded-2xl ring-1 ring-white/10 shadow-lg"
                                     />
-                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-black/20 to-transparent" />
-                                </div>
-                            )}
-
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-start gap-3 mb-4">
-                                    <div className="flex-shrink-0 mt-1">
-                                        <div className="flex items-center justify-center size-7 rounded-full bg-gradient-to-r from-green-400 to-emerald-400">
-                                            <CheckCircle className="size-4 text-white" />
+                                    {currentData.duration && (
+                                        <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-sm text-[9px] font-bold text-white">
+                                            {currentData.duration}
                                         </div>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-lg text-white truncate">{currentData.title}</h3>
-
-                                        <div className="flex items-baseline gap-2 text-gray-400">
-                                            {currentData.duration && (
-                                                <p className="text-sm mt-1"> Duration: {currentData.duration} </p>
-                                            )}
-                                            •
-                                            {currentData.filesize && (
-                                                <p className="text-sm"> Size: {currentData.filesize} </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <a
-                                        href={config.BACKEND_URL + currentData.download_url}
-                                        download
-                                        className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                        Download {downloadType === 'video' ? 'Video' : 'Audio'}
-                                    </a>
-                                    {currentData.audio_url && downloadType === 'video' && (
-                                        <a
-                                            href={currentData.audio_url}
-                                            download
-                                            className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all font-semibold text-white flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25"
-                                        >
-                                            <Download className="w-4 h-4" />
-                                            Download Audio
-                                        </a>
                                     )}
                                 </div>
 
-                                <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
-                                    <button
-                                        onClick={() => copyToClipboard(currentData.download_url)}
-                                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
-                                    >
-                                        <Copy className="w-4 h-4" />
-                                        Copy Link
+                                {/* Kanan: Info Video & Download Buttons */}
+                                <div className="flex flex-col flex-1 w-full gap-4">
+                                    {/* Metadata Ringkas */}
+                                    <div className="flex items-center gap-4 text-gray-400">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] uppercase font-bold tracking-widest text-gray-500">Duration</span>
+                                            <span className="text-sm font-semibold text-gray-200">{currentData.duration || '--'}</span>
+                                        </div>
+                                        <div className="w-px h-6 bg-white/10" />
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] uppercase font-bold tracking-widest text-gray-500">Size</span>
+                                            <span className="text-sm font-semibold text-gray-200">{currentData.filesize || '--'}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons: Stacked inside the right column */}
+                                    <div className="flex flex-col gap-2">
+                                        <a
+                                            href={config.BACKEND_URL + currentData.download_url}
+                                            download
+                                            className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                                        >
+                                            <Download className="size-4" />
+                                            Download {downloadType === 'video' ? 'Video' : 'Audio'}
+                                        </a>
+                                        <button
+                                            onClick={() => copyToClipboard(currentData.download_url)}
+                                            className="w-full h-10 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 text-gray-400 font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                                        >
+                                            <Copy className="size-3.5" />
+                                            Copy Link
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sisanya Tetap: Deskripsi, Tags & AI Insights */}
+                            <div className="pt-2 space-y-6">
+                                {/* Description Section */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between group">
+                                        <div className="flex items-center gap-2 text-gray-500">
+                                            <AlignLeft className="size-4" />
+                                            <span className="text-[11px] font-black uppercase tracking-widest">Description</span>
+                                        </div>
+
+                                        {typeof currentData.caption === "string" && (
+                                            <button
+                                                onClick={() => copyToClipboard(currentData.caption!)}
+                                                className="group-hover:opacity-100 cursor-pointer flex items-center gap-1.5 text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-all"
+                                            >
+                                                <Copy className="size-3" />
+                                                COPY
+                                            </button>
+                                        )}
+
+                                    </div>
+                                    <p className="text-sm text-gray-400 leading-relaxed italic bg-white/[0.01] p-4 rounded-xl border border-white/[0.02]">
+                                        {currentData.caption || "No description provided."}
+                                    </p>
+                                </div>
+
+                                {/* Tags Section */}
+                                {currentData.tags && currentData.tags.length > 0 && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between group">
+                                            <div className="flex items-center gap-2 text-gray-500">
+                                                <Hash className="size-4" />
+                                                <span className="text-[11px] font-black uppercase tracking-widest">Smart Tags</span>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    const hashtagged = currentData.tags?.map(t => `#${t.replace(/\s+/g, '')}`).join(' ');
+                                                    if (hashtagged) copyToClipboard(hashtagged);
+                                                }}
+                                                className="group-hover:opacity-100 cursor-pointer flex items-center gap-1.5 text-[10px] font-bold text-purple-400 hover:text-purple-300 transition-all"
+                                            >
+                                                <Copy className="size-3" />
+                                                COPY
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {currentData.tags.map((tag, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="px-3 py-1 rounded-lg bg-white/[0.03] border border-white/5 text-[11px] font-medium text-gray-500 hover:text-gray-300 hover:border-white/10 transition-colors cursor-default"
+                                                >
+                                                    #{tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* AI Insights Card */}
+                                <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-600/10 to-blue-600/10 border border-purple-500/20 flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4 text-center md:text-left">
+                                        <div className="size-12 rounded-xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-600/30 flex-shrink-0">
+                                            <Sparkles className="size-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-white">AI Content Insights</h4>
+                                            <p className="text-[10px] text-gray-500 font-medium italic">Gemini AI is ready to analyze this media</p>
+                                        </div>
+                                    </div>
+                                    <button className="w-full md:w-auto px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black transition-all shadow-md active:scale-95">
+                                        ANALYZE CONTENT
                                     </button>
                                 </div>
                             </div>
