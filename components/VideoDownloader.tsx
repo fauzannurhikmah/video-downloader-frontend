@@ -108,6 +108,8 @@ export default function VideoDownloader() {
                 if (data.type === 'video') setVideoData(data)
                 else setAudioData(data)
                 toast.success(`${data.type} ready!`)
+            } else {
+                toast.error(response.data.error || 'Failed to process video')
             }
         } catch (error) {
             toast.error('Failed to process video')
@@ -206,7 +208,7 @@ export default function VideoDownloader() {
                 </div>
             </div>
 
-            {qualities && !currentData && (
+            {!!qualities && !currentData && (
                 <div className="w-full max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8">
                     <div className="group relative p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-xl hover:border-white/30 transition-all duration-300">
 
@@ -320,7 +322,7 @@ export default function VideoDownloader() {
 
                             <div className={`flex items-center ${qualities ? "justify-between" : "justify-center"}`}>
                                 {/* Cek kalau download_type video dan kita punya data qualities, baru munculin Back */}
-                                {downloadType === 'video' && qualities && (
+                                {downloadType === 'video' && !!qualities && (
                                     <button
                                         onClick={() => setVideoData(null)}
                                         className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group"
