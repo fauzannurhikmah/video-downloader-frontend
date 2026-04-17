@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, AlertCircle, CheckCircle, Loader2, Copy, ExternalLink, Timer, Dot, Sparkles, AlignLeft, Hash } from 'lucide-react'
+import { Download, AlertCircle, CheckCircle, Loader2, Copy, ExternalLink, Timer, Dot, Sparkles, AlignLeft, Hash, HardDrive, ArrowLeft } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import config from '@/config'
@@ -22,12 +22,32 @@ interface DownloadResponse {
     error?: string
 }
 
+type AnalyzeResponse = {
+    success: boolean
+    data: {
+        platform: string
+        type: 'video' | 'audio'
+        has_quality_options: boolean
+        qualities: QualityOption[]
+        default_quality: number | null
+    }
+}
+
+
+type QualityOption = {
+    quality: number
+    label: string
+    filesize: string
+}
+
 export default function VideoDownloader() {
     const [url, setUrl] = useState('')
     const [loading, setLoading] = useState(false)
+    const [processingQuality, setProcessingQuality] = useState<number | null>(null);
 
     const [videoData, setVideoData] = useState<DownloadResponse['data'] | null>(null)
     const [audioData, setAudioData] = useState<DownloadResponse['data'] | null>(null)
+    const [qualities, setQualities] = useState<QualityOption[] | null>(null)
 
     const [downloadType, setDownloadType] = useState<'video' | 'audio'>('video')
 
@@ -40,30 +60,26 @@ export default function VideoDownloader() {
         }
         setVideoData(null)
         setAudioData(null)
+        setQualities(null)
         setLoading(true)
         try {
-            const response = await axios.post<DownloadResponse>(
-                `${config.BACKEND_URL}/api/download`,
+            const analyze = await axios.post<AnalyzeResponse>(
+                `${config.BACKEND_URL}/api/analyze`,
                 {
                     url: url.trim(),
                     type: downloadType,
                 }
             )
 
-            if (response.data.success && response.data.data) {
-                const data = response.data.data
-                console.log(data);
+            const data = analyze.data.data
 
-                if (data.type === 'video') {
-                    setVideoData(data)
-                } else if (data.type === 'audio') {
-                    setAudioData(data)
-                }
-
-                toast.success(`${data.type} ready to download!`)
-            } else {
-                toast.error(response.data.error || 'Failed to process video')
+            if (data.has_quality_options) {
+                setQualities(data.qualities)
+                return
             }
+
+            // STEP 2: DIRECT DOWNLOAD
+            await triggerDownload()
         } catch (error) {
             console.error('Download error:', error)
             if (axios.isAxiosError(error) && error.response?.data?.error) {
@@ -73,6 +89,31 @@ export default function VideoDownloader() {
             }
         } finally {
             setLoading(false)
+        }
+    }
+
+    const triggerDownload = async (quality?: number) => {
+        if (quality) setProcessingQuality(quality)
+        setLoading(true)
+
+        try {
+            const response = await axios.post(`${config.BACKEND_URL}/api/download`, {
+                url: url.trim(),
+                type: downloadType,
+                quality
+            })
+
+            if (response.data.success && response.data.data) {
+                const data = response.data.data
+                if (data.type === 'video') setVideoData(data)
+                else setAudioData(data)
+                toast.success(`${data.type} ready!`)
+            }
+        } catch (error) {
+            toast.error('Failed to process video')
+        } finally {
+            setLoading(false)
+            setProcessingQuality(null)
         }
     }
 
@@ -165,23 +206,142 @@ export default function VideoDownloader() {
                 </div>
             </div>
 
+            {qualities && !currentData && (
+                <div className="w-full max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8">
+                    <div className="group relative p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-xl hover:border-white/30 transition-all duration-300">
+
+                        {/* Header */}
+                        <div className="relative flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-2xl font-bold text-white tracking-tight">Select Quality</h3>
+                                </div>
+                                <p className="text-sm text-gray-400">Multiple resolutions found. Pick one to continue.</p>
+                            </div>
+
+                            <button
+                                onClick={() => { setQualities([]); setUrl(''); }}
+                                className="text-[10px] font-black tracking-[0.2em] text-gray-500 hover:text-white transition-colors uppercase"
+                            >
+                                Change URL
+                            </button>
+                        </div>
+
+                        {/* Grid Qualities */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            {qualities.map((item) => {
+                                const isProcessing = processingQuality === item.quality;
+                                const isBest = item.label.toLowerCase().includes('best') || item.quality >= 1080;
+                                const isRec = item.label.toLowerCase().includes('recommended');
+                                const isFast = item.label.toLowerCase().includes('fast');
+                                const cleanResolution = item.label.split(' ')[0];
+
+                                return (
+                                    <button
+                                        key={item.quality}
+                                        onClick={() => triggerDownload(item.quality)}
+                                        disabled={loading}
+                                        className={`group relative p-[1px] rounded-2xl transition-all duration-300 overflow-hidden w-full
+                            ${isProcessing
+                                                ? 'shadow-[0_0_20px_rgba(59,130,246,0.3)]'
+                                                : 'hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+                                            } ${loading && !isProcessing ? 'opacity-40 grayscale' : ''}`}
+                                    >
+                                        {/* 1. ANIMASI BORDER (Running Glow) */}
+                                        {isProcessing && (
+                                            <div className="absolute inset-[-200%] animate-border-spin bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0%,transparent_70%,#3b82f6_100%)]" />
+                                        )}
+
+                                        {/* 2. INNER CONTENT */}
+                                        <div className={`relative z-10 flex justify-between items-center w-full h-full p-5 rounded-[15px] transition-colors duration-300
+                            ${isProcessing
+                                                ? 'bg-[#0a0a0a]'
+                                                : 'bg-[#121212] border border-white/5 group-hover:border-blue-500/50 group-hover:bg-[#181818]'
+                                            }`}>
+
+                                            {/* Konten Teks (Resolution, Badges, & Filesize) */}
+                                            <div className="flex flex-col gap-2 text-left">
+                                                <span className={`block text-[9px] font-black uppercase tracking-[0.2em] leading-none ${isProcessing ? 'text-blue-400' : 'text-gray-500'}`}>
+                                                    Resolution
+                                                </span>
+
+                                                <div className="space-y-1.5">
+                                                    <h4 className="text-2xl font-black text-white leading-none tracking-tight">
+                                                        {cleanResolution}
+                                                    </h4>
+
+                                                    {/* Hirarki 2: Badges */}
+                                                    {(isBest || isRec || isFast) && (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {isBest && <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-[8px] font-black text-blue-400 border border-blue-500/20 uppercase">BEST</span>}
+                                                            {isRec && <span className="px-1.5 py-0.5 rounded-md bg-purple-500/10 text-[8px] font-black text-purple-400 border border-purple-500/20 uppercase">REC</span>}
+                                                            {isFast && <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-[8px] font-black text-emerald-400 border border-emerald-500/20 uppercase">FAST</span>}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Hirarki 3: Filesize (ESTIMASI SIZE) */}
+                                                <div className="flex items-center gap-1.5 mt-0.5 pt-1 border-t border-white/5">
+                                                    <HardDrive className={`size-2.5 ${isProcessing ? 'text-blue-400' : 'text-gray-600'}`} />
+                                                    <span className="text-[10px] font-bold text-gray-500 tabular-nums">
+                                                        {item.filesize}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Action Icon / Loader */}
+                                            <div className="flex-shrink-0 ml-2">
+                                                <div className={`size-10 rounded-xl flex items-center justify-center border transition-all duration-300
+                                    ${isProcessing
+                                                        ? 'bg-blue-600 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]'
+                                                        : 'bg-white/5 border-white/10 text-gray-400 group-hover:text-white group-hover:border-blue-500/50 group-hover:bg-blue-600/20'
+                                                    }`}>
+                                                    {isProcessing ? (
+                                                        <div className="size-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                                    ) : (
+                                                        <Download className="size-4.5" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {currentData && (
                 <div className="w-full max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="rounded-[32px] bg-[#0f0f0f] border border-white/5 overflow-hidden shadow-2xl">
 
                         <div className="p-6 md:p-8 space-y-8">
 
-                            {/* Header: Status & Title */}
-                            <div className="space-y-3 text-center">
+                            <div className={`flex items-center ${qualities ? "justify-between" : "justify-center"}`}>
+                                {/* Cek kalau download_type video dan kita punya data qualities, baru munculin Back */}
+                                {downloadType === 'video' && qualities && (
+                                    <button
+                                        onClick={() => setVideoData(null)}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group"
+                                    >
+                                        <ArrowLeft className="size-3.5 text-gray-400 group-hover:text-white transition-transform group-hover:-translate-x-0.5" />
+                                        <span className="text-[10px] font-black text-gray-400 group-hover:text-white uppercase tracking-widest">Back</span>
+                                    </button>
+                                )}
+
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
                                     <div className="size-1.5 rounded-full bg-green-500 animate-pulse" />
                                     <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Ready to Download</span>
                                 </div>
+                            </div>
+
+                            {/* Header: Status & Title */}
+                            <div className="space-y-3 text-center">
                                 <h3 className="text-xl font-bold text-white leading-tight px-4 line-clamp-2">
                                     {currentData.title}
                                 </h3>
                             </div>
-
                             {/* Main Content: Split Layout (Kiri Thumbnail, Kanan Info & Action) */}
                             <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start bg-white/[0.02] p-5 rounded-3xl border border-white/[0.03]">
 

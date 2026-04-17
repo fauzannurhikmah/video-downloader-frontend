@@ -41,6 +41,8 @@ body {
   }
 }
 
+
+
 @keyframes slide-in-from-bottom-4 {
   from {
     opacity: 0;
@@ -105,4 +107,19 @@ body {
 ::selection {
   background: rgba(59, 130, 246, 0.3);
   color: white;
+}
+
+
+@theme {
+  @keyframes border-spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  --animate-border-spin: border-spin 2s linear infinite;
 }
