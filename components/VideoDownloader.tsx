@@ -283,12 +283,14 @@ export default function VideoDownloader() {
                                                 </div>
 
                                                 {/* Hirarki 3: Filesize (ESTIMASI SIZE) */}
-                                                <div className="flex items-center gap-1.5 mt-0.5 pt-1 border-t border-white/5">
-                                                    <HardDrive className={`size-2.5 ${isProcessing ? 'text-blue-400' : 'text-gray-600'}`} />
-                                                    <span className="text-[10px] font-bold text-gray-500 tabular-nums">
-                                                        {item.filesize}
-                                                    </span>
-                                                </div>
+                                                {item.filesize && (
+                                                    <div className="flex items-center gap-1.5 mt-0.5 pt-1 border-t border-white/5">
+                                                        <HardDrive className={`size-2.5 ${isProcessing ? 'text-blue-400' : 'text-gray-600'}`} />
+                                                        <span className="text-[10px] font-bold text-gray-500 tabular-nums">
+                                                            {item.filesize}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Action Icon / Loader */}
